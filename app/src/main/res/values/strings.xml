@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">AdTest</string>
     <string name="action_settings">Settings</string>
+    <string name="title">倍业测试广告位</string>
+    <string name="button_reload">重新请求</string>
+
+
 </resources>
