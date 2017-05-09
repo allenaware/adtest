@@ -15,10 +15,12 @@ import android.telephony.TelephonyManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.math.BigInteger;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.security.MessageDigest;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -80,7 +82,10 @@ public class DeviceInfoUtil {
             //set timestamp
             String timestamp = System.currentTimeMillis() + "";
             jsonObject.put("time", "1493966475774");
+            timestamp = "1493966475774";
             //set token
+            String tokenRaw = "100144"+"1c75b8bbe58398d2930fa4afb85d87db"+timestamp;
+            String token = getMD5(tokenRaw);
             jsonObject.put("token", "f6eee0e8a70b4dc7a4db35802d137f70");
             //set reqid
             jsonObject.put("reqid", "d67411e0315d11e787e5e57138710211");
@@ -317,5 +322,31 @@ public class DeviceInfoUtil {
         }
 
         return network;
+    }
+    private  String getMD5(String s) {
+        char hexDigits[]={ '0', '1', '2', '3', '4', '5', '6', '7',
+                '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+        try {
+            byte[] btInput = s.getBytes();
+            // 获得MD5摘要算法的 MessageDigest 对象
+            MessageDigest mdInst = MessageDigest.getInstance("MD5");
+            // 使用指定的字节更新摘要
+            mdInst.update(btInput);
+            // 获得密文
+            byte[] md = mdInst.digest();
+            // 把密文转换成十六进制的字符串形式
+            int j = md.length;
+            char str[] = new char[j * 2];
+            int k = 0;
+            for (int i = 0; i < j; i++) {
+                byte byte0 = md[i];
+                str[k++] = hexDigits[byte0 >>> 4 & 0xf];
+                str[k++] = hexDigits[byte0 & 0xf];
+            }
+            return new String(str);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

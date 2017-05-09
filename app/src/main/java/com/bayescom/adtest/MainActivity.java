@@ -181,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
         DeviceInfoUtil devu = new DeviceInfoUtil(this);
 
         final JSONObject jsonObject = devu.getDeviceInfo();
+//        final JSONObject jsonObject = devu.getMockDeviceInfo();
         System.out.println(jsonObject.toString());
 
 
