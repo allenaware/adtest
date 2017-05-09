@@ -23,6 +23,9 @@ import java.net.SocketException;
 import java.security.MessageDigest;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.UUID;
+
+
 
 /**
  * Created by allen on 2017/5/8.
@@ -74,25 +77,26 @@ public class DeviceInfoUtil {
         return jsonObject;
 
     }
-    public JSONObject getDeviceInfo() {
+    public JSONObject getDeviceInfo(String adspotId,String mediaId,String mediaKey) {
         JSONObject jsonObject = new JSONObject();
         try {
             //set interface version
             jsonObject.put("version", "2.0");
             //set timestamp
             String timestamp = System.currentTimeMillis() + "";
-            jsonObject.put("time", "1493966475774");
-            timestamp = "1493966475774";
+            jsonObject.put("time", timestamp);
             //set token
-            String tokenRaw = "100144"+"1c75b8bbe58398d2930fa4afb85d87db"+timestamp;
+            String tokenRaw = mediaId+mediaKey+timestamp;
             String token = getMD5(tokenRaw);
-            jsonObject.put("token", "f6eee0e8a70b4dc7a4db35802d137f70");
+            jsonObject.put("token", token);
             //set reqid
-            jsonObject.put("reqid", "d67411e0315d11e787e5e57138710211");
+            String reqid = UUID.randomUUID().toString(); //获取UUID并转化为String对象
+            reqid = reqid.replace("-", "");
+            jsonObject.put("reqid", reqid);
             //set appid
-            jsonObject.put("appid", "100144");
+            jsonObject.put("appid", mediaId);
             //set adspotid
-            jsonObject.put("adspotid", "10000334");
+            jsonObject.put("adspotid", adspotId);
             //set appver
             String appver = "1.0";
             jsonObject.put("appver", appver);

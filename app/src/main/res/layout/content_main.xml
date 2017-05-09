@@ -9,27 +9,19 @@
     tools:showIn="@layout/activity_main">
 
     <ScrollView
+        android:id="@+id/ad_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:scrollbarStyle="insideOverlay"
         tools:layout_editor_absoluteX="185dp"
         tools:layout_editor_absoluteY="145dp">
 
         <LinearLayout
+            android:id="@+id/ad_v_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" >
+            android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/adImageView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:onClick="adDidClick"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
-                app:srcCompat="@android:drawable/btn_star" />
         </LinearLayout>
     </ScrollView>
 
