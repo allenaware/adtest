@@ -2,6 +2,7 @@ package com.bayescom.adtest;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,6 +14,8 @@ import android.text.InputType;
 import android.util.Base64;
 import android.view.Menu;
 import android.view.View;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -58,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private  ArrayList showReportArrayList;
     private ArrayList clickReportArrayList;
     private String link = "";
+    private String htmlString="";
     private ArrayList imageUrlArrayList;
     private ArrayList wordArrayList;
     private String adspotId ="10000334";
@@ -69,7 +73,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("10000334");
+        SharedPreferences sp = getSharedPreferences("adspotInfo", getApplicationContext().MODE_PRIVATE);
+        String storeMediaId = sp.getString("mediaId",null);
+        String storeMediaKey = sp.getString("mediaKey",null);
+        String storeAdspotId= sp.getString("adspotId",null);
+        if(storeMediaId!=null&&storeAdspotId!=null&&storeMediaKey!=null)
+        {
+            mediaId = storeMediaId;
+            mediaKey =storeMediaKey;
+            adspotId =storeAdspotId;
+        }
+        toolbar.setTitle(adspotId);
         setSupportActionBar(toolbar);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
@@ -153,10 +167,11 @@ public class MainActivity extends AppCompatActivity {
                         for(int i=0;i<impArray.length();i++)
                         {
                            JSONObject impObj= impArray.getJSONObject(i);
-                           JSONArray image = impObj.getJSONArray("image") ;
+                           JSONArray image = impObj.optJSONArray("image") ;
                            JSONArray word =  impObj.optJSONArray("word");
-                           JSONArray imptk = impObj.getJSONArray("imptk");
-                           JSONArray clicktk = impObj.getJSONArray("clicktk");
+                           JSONArray imptk = impObj.optJSONArray("imptk");
+                           JSONArray clicktk = impObj.optJSONArray("clicktk");
+                           htmlString  = impObj.optString("htmlstring");
                            link = impObj.getString("link");
                            if(word !=null)
                            {
@@ -166,20 +181,24 @@ public class MainActivity extends AppCompatActivity {
                                    wordArrayList.add( wordObject.getString("text"));
                                }
                            }
+                           if(image !=null) {
 
-                           for(int b =0;b<image.length();b++)
-                           {
-                               JSONObject imageObj = image.getJSONObject(b);
-                                imageUrlArrayList.add( imageObj.getString("iurl"));
+                               for (int b = 0; b < image.length(); b++) {
+                                   JSONObject imageObj = image.getJSONObject(b);
+                                   imageUrlArrayList.add(imageObj.getString("iurl"));
+                               }
                            }
-                           for(int c=0; c<imptk.length();c++)
-                           {
-                               showReportArrayList.add(imptk.getString(c));
+                           if(imptk !=null) {
+                               for (int c = 0; c < imptk.length(); c++)
+                               {
+                                   showReportArrayList.add(imptk.getString(c));
 
+                               }
                            }
-                           for(int d =0;d<clicktk.length();d++)
-                           {
-                               clickReportArrayList.add(clicktk.getString(d));
+                           if(clicktk !=null) {
+                               for (int d = 0; d < clicktk.length(); d++) {
+                                   clickReportArrayList.add(clicktk.getString(d));
+                               }
                            }
 
                         }
@@ -201,6 +220,17 @@ public class MainActivity extends AppCompatActivity {
                                 }
 
                             }.start();
+
+                        }
+                        //set the html webView if any
+
+                        if(htmlString!=""&&htmlString!=null)
+                        {
+                            WebView webView = new WebView(getApplicationContext());
+                            webView.loadDataWithBaseURL(null, htmlString, "text/html", "utf-8", null);
+                            webView.getSettings().setJavaScriptEnabled(true);
+                            webView.setWebChromeClient(new WebChromeClient());
+                            ad_group.addView(webView);
 
                         }
                        //添加点击回调
@@ -246,6 +276,12 @@ public class MainActivity extends AppCompatActivity {
                         mediaKey = jsonObject.getString("media_key");
                         mediaId = jsonObject.getString("media_id");
                         adspotId = jsonObject.getString("adspot_id");
+                        SharedPreferences sp = getSharedPreferences("adspotInfo", getApplicationContext().MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sp.edit();
+                        editor.putString("adspotId", adspotId);
+                        editor.putString("mediaId", mediaId);
+                        editor.putString("mediaKey",mediaKey);
+                        editor.commit();
                         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
                         toolbar.setTitle(adspotId);
                     }catch (Exception e)
