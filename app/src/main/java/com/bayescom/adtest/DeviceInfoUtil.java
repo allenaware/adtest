@@ -2,6 +2,8 @@ package com.bayescom.adtest;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -18,12 +20,10 @@ import org.json.JSONObject;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.security.MessageDigest;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.UUID;
-
 
 
 /**
@@ -32,13 +32,13 @@ import java.util.UUID;
 
 public class DeviceInfoUtil {
     private Activity activity;
-    public DeviceInfoUtil(Activity activity)
-    {
+
+    public DeviceInfoUtil(Activity activity) {
         this.activity = activity;
 
     }
-    public JSONObject getMockDeviceInfo()
-    {
+
+    public JSONObject getMockDeviceInfo() {
         //mock request Json
         JSONObject jsonObject = new JSONObject();
         String jsonStr = "{\n" +
@@ -69,14 +69,15 @@ public class DeviceInfoUtil {
                 "    \"osv\":\"7.0\"\n" +
                 "}";
         try {
-               jsonObject= new JSONObject(jsonStr);
+            jsonObject = new JSONObject(jsonStr);
         } catch (JSONException e) {
             e.printStackTrace();
         }
         return jsonObject;
 
     }
-    public JSONObject getDeviceInfo(String adspotId,String mediaId,String mediaKey) {
+
+    public JSONObject getDeviceInfo(String adspotId, String mediaId, String mediaKey) {
         JSONObject jsonObject = new JSONObject();
         try {
             //set interface version
@@ -85,7 +86,7 @@ public class DeviceInfoUtil {
             String timestamp = System.currentTimeMillis() + "";
             jsonObject.put("time", timestamp);
             //set token
-            String tokenRaw = mediaId+mediaKey+timestamp;
+            String tokenRaw = mediaId + mediaKey + timestamp;
             String token = getMD5(tokenRaw);
             jsonObject.put("token", token);
             //set reqid
@@ -98,6 +99,7 @@ public class DeviceInfoUtil {
             jsonObject.put("adspotid", adspotId);
             //set appver
             String appver = "1.0";
+            appver = getAppversion();
             jsonObject.put("appver", appver);
             Integer impsize = 1;
             jsonObject.put("impsize", impsize);
@@ -107,6 +109,8 @@ public class DeviceInfoUtil {
             String make = Build.MANUFACTURER;
             jsonObject.put("make", make);
             String osv = Build.VERSION.RELEASE;
+            String[] osvs = osv.split("\\.");
+            osv = osvs[0] + "." + osvs[1];
             jsonObject.put("osv", osv);
             Integer os = 2;
             jsonObject.put("os", os);
@@ -124,6 +128,9 @@ public class DeviceInfoUtil {
                 Double lon = location.getLongitude();
                 jsonObject.put("lat", lat);
                 jsonObject.put("lon", lon);
+            } else {
+                jsonObject.put("lat", 0);
+                jsonObject.put("lon", 0);
             }
             String androidid = getAndroidid();
             jsonObject.put("androidid", androidid);
@@ -150,13 +157,14 @@ public class DeviceInfoUtil {
         }
         return jsonObject;
     }
+
     private String getIP() {
-        Context context = activity.getApplicationContext();
-        NetworkInfo info = ((ConnectivityManager) context
-                .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-        if (info != null && info.isConnected()) {
-            if (info.getType() == ConnectivityManager.TYPE_MOBILE) {//当前使用2G/3G/4G网络
-                try {
+        try {
+            Context context = activity.getApplicationContext();
+            NetworkInfo info = ((ConnectivityManager) context
+                    .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+            if (info != null && info.isConnected()) {
+                if (info.getType() == ConnectivityManager.TYPE_MOBILE) {//当前使用2G/3G/4G网络
                     for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
                         NetworkInterface intf = en.nextElement();
                         for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
@@ -166,22 +174,33 @@ public class DeviceInfoUtil {
                             }
                         }
                     }
-                } catch (SocketException e) {
-                    e.printStackTrace();
+                } else if (info.getType() == ConnectivityManager.TYPE_WIFI) {//当前使用无线网络
+                    WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                    WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+                    //调用方法将int转换为地址字符串
+                    String ipAddress = intIP2StringIP(wifiInfo.getIpAddress());//得到IPV4地址
+                    return ipAddress;
                 }
-
-            } else if (info.getType() == ConnectivityManager.TYPE_WIFI) {//当前使用无线网络
-                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-                //调用方法将int转换为地址字符串
-                String ipAddress = intIP2StringIP(wifiInfo.getIpAddress());//得到IPV4地址
-                return ipAddress;
             }
-        } else {
+        } catch (Exception e) {
             return "";
-            //当前无网络连接,请在设置中打开网络
         }
         return "";
+    }
+
+    private String getAppversion() {
+
+        PackageManager pm = activity.getApplicationContext().getPackageManager();//得到PackageManager对象
+
+        try {
+            PackageInfo pi = pm.getPackageInfo(activity.getPackageName(), 0);//得到PackageInfo对象，封装了一些软件包的信息在里面
+            String appVersion = pi.versionName;//获取清单文件中versionCode节点的值
+            return appVersion;
+        } catch (Exception e) {
+            return "1.0";
+        }
+
+
     }
 
     private String intIP2StringIP(int ip) {
@@ -192,15 +211,24 @@ public class DeviceInfoUtil {
     }
 
     private String getCurrentUserAgent() {
-        String userAgent = System.getProperty("http.agent");
-        return userAgent;
+        try {
+            String userAgent = System.getProperty("http.agent");
+            return userAgent;
+        } catch (Exception e) {
+            return "";
+        }
 
     }
 
     private String getPhoneIMEI() {
-        TelephonyManager mTm = (TelephonyManager) activity.getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
-        String imei = mTm.getDeviceId();
-        return imei;
+        try {
+            TelephonyManager mTm = (TelephonyManager) activity.getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+            String imei = mTm.getDeviceId();
+            return imei;
+        } catch (Exception e) {
+            return "";
+
+        }
     }
 
 
@@ -211,10 +239,10 @@ public class DeviceInfoUtil {
 //        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
 //        macAddress = wifiInfo.getMacAddress();
 //        return macAddress;
-        String macAddress = null;
-        StringBuffer buf = new StringBuffer();
-        NetworkInterface networkInterface = null;
         try {
+            String macAddress = null;
+            StringBuffer buf = new StringBuffer();
+            NetworkInterface networkInterface = null;
             networkInterface = NetworkInterface.getByName("eth1");
             if (networkInterface == null) {
                 networkInterface = NetworkInterface.getByName("wlan0");
@@ -230,17 +258,15 @@ public class DeviceInfoUtil {
                 buf.deleteCharAt(buf.length() - 1);
             }
             macAddress = buf.toString();
-        } catch (SocketException e) {
-            e.printStackTrace();
-            return "02:00:00:00:00:02";
+            return macAddress;
+        } catch (Exception e) {
+            return "";
         }
-        return macAddress;
     }
 
     private Location getLocation() {
         LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
         String locationProvider;
-
         //获取所有可用的位置提供器
         List<String> providers = locationManager.getProviders(true);
         if (providers.contains(LocationManager.GPS_PROVIDER)) {
@@ -263,72 +289,85 @@ public class DeviceInfoUtil {
     }
 
     private String getAndroidid() {
-        return Settings.System.getString(activity.getContentResolver(), Settings.System.ANDROID_ID);
+        try {
+            return Settings.System.getString(activity.getContentResolver(), Settings.System.ANDROID_ID);
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private String getCarrier() {
-        TelephonyManager telManager = (TelephonyManager)activity.getSystemService(Context.TELEPHONY_SERVICE);
-        String operator = telManager.getSimOperator();
-        return operator;
+        try {
+            TelephonyManager telManager = (TelephonyManager) activity.getSystemService(Context.TELEPHONY_SERVICE);
+            String operator = telManager.getSimOperator();
+            return operator;
+        } catch (Exception e) {
+            return "";
+        }
 
     }
 
     private Integer getNetwork() {
-        int network = 0;
-        ConnectivityManager connectivity = (ConnectivityManager)activity.getApplicationContext()
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivity == null) {
-            return network;
-        }
+        try {
+            int network = 0;
+            ConnectivityManager connectivity = (ConnectivityManager) activity.getApplicationContext()
+                    .getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (connectivity == null) {
+                return network;
+            }
 
-        NetworkInfo networkInfo = connectivity.getActiveNetworkInfo();
-        if (networkInfo != null && networkInfo.isConnected()) {
-            if (networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
-                network = 1;
-            } else if (networkInfo.getType() == ConnectivityManager.TYPE_MOBILE) {
-                String _strSubTypeName = networkInfo.getSubtypeName();
+            NetworkInfo networkInfo = connectivity.getActiveNetworkInfo();
+            if (networkInfo != null && networkInfo.isConnected()) {
+                if (networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
+                    network = 1;
+                } else if (networkInfo.getType() == ConnectivityManager.TYPE_MOBILE) {
+                    String _strSubTypeName = networkInfo.getSubtypeName();
 
-                // TD-SCDMA   networkType is 17
-                int networkType = networkInfo.getSubtype();
-                switch (networkType) {
-                    case TelephonyManager.NETWORK_TYPE_GPRS:
-                    case TelephonyManager.NETWORK_TYPE_EDGE:
-                    case TelephonyManager.NETWORK_TYPE_CDMA:
-                    case TelephonyManager.NETWORK_TYPE_1xRTT:
-                    case TelephonyManager.NETWORK_TYPE_IDEN: //api<8 : replace by 11
-                        network = 2;
-                        break;
-                    case TelephonyManager.NETWORK_TYPE_UMTS:
-                    case TelephonyManager.NETWORK_TYPE_EVDO_0:
-                    case TelephonyManager.NETWORK_TYPE_EVDO_A:
-                    case TelephonyManager.NETWORK_TYPE_HSDPA:
-                    case TelephonyManager.NETWORK_TYPE_HSUPA:
-                    case TelephonyManager.NETWORK_TYPE_HSPA:
-                    case TelephonyManager.NETWORK_TYPE_EVDO_B: //api<9 : replace by 14
-                    case TelephonyManager.NETWORK_TYPE_EHRPD:  //api<11 : replace by 12
-                    case TelephonyManager.NETWORK_TYPE_HSPAP:  //api<13 : replace by 15
-                        network = 3;
-                        break;
-                    case TelephonyManager.NETWORK_TYPE_LTE:    //api<11 : replace by 13
-                        network = 4;
-                        break;
-                    default:
-                        //中国移动 联通 电信 三种3G制式
-                        if (_strSubTypeName.equalsIgnoreCase("TD-SCDMA") || _strSubTypeName.equalsIgnoreCase("WCDMA") || _strSubTypeName.equalsIgnoreCase("CDMA2000")) {
+                    // TD-SCDMA   networkType is 17
+                    int networkType = networkInfo.getSubtype();
+                    switch (networkType) {
+                        case TelephonyManager.NETWORK_TYPE_GPRS:
+                        case TelephonyManager.NETWORK_TYPE_EDGE:
+                        case TelephonyManager.NETWORK_TYPE_CDMA:
+                        case TelephonyManager.NETWORK_TYPE_1xRTT:
+                        case TelephonyManager.NETWORK_TYPE_IDEN: //api<8 : replace by 11
+                            network = 2;
+                            break;
+                        case TelephonyManager.NETWORK_TYPE_UMTS:
+                        case TelephonyManager.NETWORK_TYPE_EVDO_0:
+                        case TelephonyManager.NETWORK_TYPE_EVDO_A:
+                        case TelephonyManager.NETWORK_TYPE_HSDPA:
+                        case TelephonyManager.NETWORK_TYPE_HSUPA:
+                        case TelephonyManager.NETWORK_TYPE_HSPA:
+                        case TelephonyManager.NETWORK_TYPE_EVDO_B: //api<9 : replace by 14
+                        case TelephonyManager.NETWORK_TYPE_EHRPD:  //api<11 : replace by 12
+                        case TelephonyManager.NETWORK_TYPE_HSPAP:  //api<13 : replace by 15
                             network = 3;
-                        } else {
-                            network = 0;
-                        }
-                        break;
+                            break;
+                        case TelephonyManager.NETWORK_TYPE_LTE:    //api<11 : replace by 13
+                            network = 4;
+                            break;
+                        default:
+                            //中国移动 联通 电信 三种3G制式
+                            if (_strSubTypeName.equalsIgnoreCase("TD-SCDMA") || _strSubTypeName.equalsIgnoreCase("WCDMA") || _strSubTypeName.equalsIgnoreCase("CDMA2000")) {
+                                network = 3;
+                            } else {
+                                network = 0;
+                            }
+                            break;
+                    }
                 }
             }
+            return network;
+        } catch (Exception e) {
+            return 0;
         }
 
-        return network;
     }
-    private  String getMD5(String s) {
-        char hexDigits[]={ '0', '1', '2', '3', '4', '5', '6', '7',
-                '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
+    private String getMD5(String s) {
+        char hexDigits[] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         try {
             byte[] btInput = s.getBytes();
             // 获得MD5摘要算法的 MessageDigest 对象
