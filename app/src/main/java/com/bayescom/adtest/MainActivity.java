@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String JUPITER_URL = "http://jupiter.bayescom.com/dspapi/v1/mediaInfo/";
     private String PORT="80";
     private String MODE="prod";
+    public String RESTYPE ="0";
     private ArrayList showReportArrayList;
     private ArrayList clickReportArrayList;
     private String link = null;
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         String storeAdspotId = sp.getString("adspotId", null);
         String storeMode = sp.getString("mode", null);
         String storePort = sp.getString("port", null);
+        String resType = sp.getString("resType", null);
         if (storeMediaId != null && storeAdspotId != null && storeMediaKey != null) {
             mediaId = storeMediaId;
             mediaKey = storeMediaKey;
@@ -103,6 +105,10 @@ public class MainActivity extends AppCompatActivity {
         if(storePort!=null)
         {
             PORT= storePort;
+        }
+        if(resType!=null)
+        {
+            RESTYPE = resType;
         }
         resetToolbarTitle();
         setSupportActionBar(toolbar);
@@ -179,6 +185,28 @@ public class MainActivity extends AppCompatActivity {
                 editor.commit();
                 resetToolbarTitle();
 
+                break;
+            case R.id.action_set_restype:
+                final EditText et3 = new EditText(this);
+                et3.setInputType(InputType.TYPE_CLASS_NUMBER);
+                new AlertDialog.Builder(this)
+                        .setTitle("请输入")
+                        .setIcon(android.R.drawable.ic_menu_edit)
+                        .setView(et3)
+                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                final String resType = et3.getText().toString();
+                                RESTYPE=resType;
+                                SharedPreferences sp = getSharedPreferences("adspotInfo", getApplicationContext().MODE_PRIVATE);
+                                SharedPreferences.Editor editor = sp.edit();
+                                editor.putString("resType", resType);
+                                editor.commit();
+                                resetToolbarTitle();
+                            }
+                        })
+                        .setNegativeButton("取消", null)
+                        .show();
                 break;
         }
 
@@ -658,7 +686,7 @@ public class MainActivity extends AppCompatActivity {
     private void resetToolbarTitle()
     {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("广告位:"+adspotId+" 模式:"+MODE+" 端口:"+PORT);
+        toolbar.setTitle("广告位:"+adspotId+" 模式:"+MODE+" 端口:"+PORT+" 资源类型:"+RESTYPE);
     }
 
     private class MyWebViewDownLoadListener implements DownloadListener {

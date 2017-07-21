@@ -152,6 +152,8 @@ public class DeviceInfoUtil {
             jsonObject.put("carrier", carrier);
             Integer network = getNetwork();
             jsonObject.put("network", network);
+            Integer resType = Integer.parseInt(((MainActivity)this.activity).RESTYPE);
+            jsonObject.put("res_type",resType);
         } catch (Exception e) {
             e.printStackTrace();
         }

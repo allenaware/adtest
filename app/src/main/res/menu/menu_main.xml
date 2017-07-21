@@ -8,13 +8,14 @@
         android:title="@string/action_settings"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_set_mode"
-        android:orderInCategory="100"
-        android:title="切换调试模式"
-        app:showAsAction="never" />
-    <item
         android:id="@+id/action_set_port"
         android:orderInCategory="100"
-        android:title="设置调试端口"
-        app:showAsAction="never" />
+        android:title="设置调试端口" />
+    <item
+        android:id="@+id/action_set_mode"
+        android:orderInCategory="101"
+        android:title="切换调试模式" />
+    <item
+        android:id="@+id/action_set_restype"
+        android:title="设置资源类型" />
 </menu>
